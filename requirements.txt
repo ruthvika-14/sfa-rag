@@ -1,8 +1,8 @@
 fastapi
 uvicorn
-faiss-cpu
-sentence-transformers
 requests
 beautifulsoup4
 anthropic
 numpy
+scikit-learn
+python-dotenv

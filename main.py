@@ -2,9 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from sentence_transformers import SentenceTransformer
-import faiss
-import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 import pickle
 import os
 import anthropic
@@ -24,15 +23,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("Loading model and index...")
-model = SentenceTransformer('all-MiniLM-L6-v2')
-index = faiss.read_index("sfa_index.faiss")
-
+print("Loading index...")
 with open("sfa_chunks.pkl", "rb") as f:
     data = pickle.load(f)
 
 chunks = data["chunks"]
 meta = data["meta"]
+
+vectorizer = TfidfVectorizer()
+tfidf_matrix = vectorizer.fit_transform(chunks)
 print(f"Ready! {len(chunks)} chunks loaded")
 
 class Query(BaseModel):
@@ -40,12 +39,13 @@ class Query(BaseModel):
 
 @app.post("/ask")
 def ask(q: Query):
-    q_embed = model.encode([q.question]).astype('float32')
-    D, I = index.search(q_embed, k=3)
+    q_vec = vectorizer.transform([q.question])
+    scores = cosine_similarity(q_vec, tfidf_matrix)[0]
+    top_indices = scores.argsort()[-3:][::-1]
     
     context = "\n\n".join([
         f"[Source: {meta[i]}]\n{chunks[i]}"
-        for i in I[0] if i < len(chunks)
+        for i in top_indices
     ])
     
     response = client.messages.create(
@@ -57,7 +57,7 @@ def ask(q: Query):
         ]
     )
     
-    sources = list(set([meta[i] for i in I[0] if i < len(chunks)]))
+    sources = list(set([meta[i] for i in top_indices]))
     
     return {
         "answer": response.content[0].text,
