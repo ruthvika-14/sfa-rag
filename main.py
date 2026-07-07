@@ -49,7 +49,7 @@ def ask(q: Query):
     ])
     
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=1000,
         system=f'You are a Safe Food Alliance assistant. Answer ONLY using this context. If the answer is not in the context say I dont have that information.\n\nContext:\n{context}',
         messages=[
