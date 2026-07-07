@@ -159,7 +159,7 @@ async function ask(){
     addMsg(data.answer,'bot',data.sources?data.sources.join(' | '):'');
   }catch(e){
     typing.remove();
-    addMsg('Could not connect to server. Make sure backend is running on localhost:8000','bot','');
+    addMsg('Server is waking up — please wait 30 seconds and try again.','bot','');
   }finally{
     input.disabled=false;
     btn.disabled=false;
